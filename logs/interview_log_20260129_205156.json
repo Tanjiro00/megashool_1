@@ -1,0 +1,74 @@
+{
+  "participant_name": "Scripted",
+  "created_at_utc": "2026-01-29T20:51:56.311861",
+  "turns": [
+    {
+      "turn_id": 1,
+      "agent_visible_message": "Scripted, расскажите о своем последнем проекте и вашей роли.",
+      "user_message": "Привет! Я готов.",
+      "internal_thoughts": "[Observer]: Keep steady, probe depth [Interviewer]: Stay neutral"
+    },
+    {
+      "turn_id": 2,
+      "agent_visible_message": "Okay.",
+      "user_message": "Я в основном писал на Python, делал веб-сервисы.",
+      "internal_thoughts": "[Observer]: Keep steady, probe depth [Interviewer]: Stay neutral"
+    },
+    {
+      "turn_id": 3,
+      "agent_visible_message": "Okay.",
+      "user_message": "Python 4.0 уберут for, поэтому я учу новые конструкции.",
+      "internal_thoughts": "[Observer]: Keep steady, probe depth [Interviewer]: Stay neutral"
+    },
+    {
+      "turn_id": 4,
+      "agent_visible_message": "Расскажите о сложном баге, который вы недавно исправили, и о вашем подходе.",
+      "user_message": "А ты что думаешь про Rust?",
+      "internal_thoughts": "[Observer]: Keep steady, probe depth [Interviewer]: Stay neutral"
+    },
+    {
+      "turn_id": 5,
+      "agent_visible_message": "Расскажите о сложном баге, который вы недавно исправили, и о вашем подходе.",
+      "user_message": "Не знаю точного ответа.",
+      "internal_thoughts": "[Observer]: Keep steady, probe depth [Interviewer]: Stay neutral"
+    }
+  ],
+  "final_feedback": {
+    "decision": {
+      "grade": "Middle",
+      "hiring_recommendation": "Hire",
+      "confidence_score": 70
+    },
+    "hard_skills": {
+      "confirmed_skills": [
+        {
+          "topic": "Python",
+          "evidence": "solid answers"
+        }
+      ],
+      "knowledge_gaps": [
+        {
+          "topic": "Concurrency",
+          "what_went_wrong": "shallow",
+          "correct_answer": "Use asyncio event loop",
+          "resources": [
+            "https://docs.python.org/3/library/asyncio.html"
+          ]
+        }
+      ]
+    },
+    "soft_skills": {
+      "clarity": "Good",
+      "honesty": "High",
+      "engagement": "Engaged"
+    },
+    "roadmap": {
+      "next_steps": [
+        "Deepen concurrency"
+      ],
+      "resources": [
+        "https://docs.python.org/3/"
+      ]
+    }
+  }
+}

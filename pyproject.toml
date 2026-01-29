@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "interview-coach"
+version = "0.1.0"
+description = "Multi-agent interview coach using CrewAI"
+authors = [{ name = "Codex" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/interview_coach"]

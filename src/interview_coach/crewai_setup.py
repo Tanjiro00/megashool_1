@@ -175,6 +175,7 @@ def planner_task(
     coverage_hint: dict,
     recent_qa: str,
     known_facts: str,
+    candidate_profile: str | None = None,
     extra_hint: str = "",
 ) -> Task:
     # Guidance for next_action to make behaviour deterministic
@@ -185,10 +186,14 @@ def planner_task(
         "если нужен уточняющий вопрос или ответ неясен => CLARIFY_THEN_ASK; "
         "иначе ASK_QUESTION. Всегда задавай конкретный следующий вопрос."
     )
+    profile_line = f"Candidate profile: {candidate_profile}\n" if candidate_profile else ""
     description = (
         f"{INTERVIEWER_SYSTEM_PROMPT}\n"
+        f"{profile_line}"
         f"Observer memo: {analysis.internal_memo}\n"
         f"Detected intent: {analysis.detected_intent}\n"
+        f"Correctness: {analysis.correctness}, answer_score: {analysis.answer_score}\n"
+        f"Key gaps: {', '.join(analysis.key_gaps) if analysis.key_gaps else '—'}\n"
         f"Recommended follow-up: {analysis.recommended_followup}\n"
         f"Desired difficulty: {difficulty}\n"
         f"Selected topic (fixed): {selection.topic.name} [{selection.topic.id}] priority={selection.topic.priority}\n"
@@ -198,6 +203,7 @@ def planner_task(
         f"Known facts: {known_facts or '—'}\n"
         f"{next_action_rules}\n"
         f"State summary: {state_summary}\n"
+        "Если ответ неверный/неполный/UNKNOWN — начни next_question с короткой корректировки или подсказки (1 предложение), затем задай проверочный вопрос. "
         "Stay within the selected topic; do not switch topics. Варьируй формулировки, не повторяй дословно предыдущие вопросы. "
         "Сформируй InterviewerPlan JSON с topic_id, next_action и конкретным next_question."
     )
@@ -211,9 +217,11 @@ def planner_task(
     )
 
 
-def interviewer_task(interviewer_agent, plan: InterviewerPlan, last_user_message: str) -> Task:
+def interviewer_task(interviewer_agent, plan: InterviewerPlan, last_user_message: str, candidate_profile: str | None = None) -> Task:
+    profile_line = f"Candidate profile: {candidate_profile}\n" if candidate_profile else ""
     description = (
         f"{INTERVIEWER_SYSTEM_PROMPT}\n"
+        f"{profile_line}"
         f"Plan: next_action={plan.next_action}, topic={plan.topic} ({getattr(plan, 'topic_id', None)}), difficulty={plan.difficulty}\n"
         f"Next question draft: {plan.next_question}\n"
         f"Last user message (for role-reversal/redirect/clarify): {last_user_message}\n"

@@ -1,0 +1,144 @@
+{
+  "participant_name": "Зиновьев_Даниил_Витальевич",
+  "created_at_utc": "2026-01-30T20:36:46.383821",
+  "turns": [
+    {
+      "turn_id": 1,
+      "agent_visible_message": "Здравствуйте, Олег! Рад познакомиться. Давайте начнём с основ Java. Скажите, пожалуйста, какие примитивные типы данных вы знаете в Java?",
+      "user_message": "byte, short, int, long",
+      "internal_thoughts": "[Observer]: Кандидат знает целочисленные типы, но пропустил float, double, boolean, char. Вопрос про Java, а topic_id указан python_basics — несоответствие. Меняю на java_basics. [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.04/0.04 reason=Тема python_basics ещё не покрыта (asked=1, status=in_progress); остаёмся. off_topic=False controversial=False injection=False"
+    },
+    {
+      "turn_id": 2,
+      "agent_visible_message": "Хорошо, целочисленные типы вы знаете! Но в Java есть и другие примитивные типы данных, помимо целочисленных. Какие ещё примитивные типы вы можете назвать?",
+      "user_message": "Конечно! Вот ответ для Java: floar, char, boolean. Примечание: Как языковая модель AI, я рекомендую проверить этот код перед запуском. Надеюсь, это поможет!\"",
+      "internal_thoughts": "[Observer]: Опечатка floar, забыл double. Странный текст про AI — возможно, кандидат копирует ответы из ChatGPT или шутит. Требуется уточнение и возврат к нормальному диалогу. Тема Java, исправляю topic_id. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.05/0.05 reason=Тема python_basics ещё не покрыта (asked=2, status=in_progress); остаёмся. off_topic=False controversial=False injection=False"
+    },
+    {
+      "turn_id": 3,
+      "agent_visible_message": "Уточните, пожалуйста, что имели в виду. Затем ответьте: Олег, вы упомянули 'floar' — вероятно, имели в виду 'float', верно? И фраза про AI-модель — это была шутка? Давайте продолжим: какой ещё примитивный тип для чисел с плавающей точкой есть в Java, кроме float?",
+      "user_message": "Ой, это я просто скопировал из своих заметок, я туда сохраняю полезные сниппеты. Но я сам это писал, честно!",
+      "internal_thoughts": "[Observer]: Кандидат уклоняется от ответа, оправдывается вместо решения задачи. Не исправил floar→float, не назвал double. Подозрение на нечестность или панику. Нужно тактично вернуть к вопросу и дать возможность ответить или признать незнание. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.04/0.04 reason=Тема python_basics ещё не покрыта (asked=3, status=in_progress); остаёмся. off_topic=False controversial=False injection=False"
+    }
+  ],
+  "final_feedback": {
+    "decision": {
+      "grade": "Junior",
+      "hiring_recommendation": "NoHire",
+      "confidence_score": 0
+    },
+    "hard_skills": {
+      "confirmed_skills": [
+        {
+          "topic": "Примитивные типы Java (целочисленные)",
+          "evidence": "Корректно назвал byte, short, int, long"
+        }
+      ],
+      "knowledge_gaps": [
+        {
+          "topic": "Примитивные типы Java (полный список)",
+          "what_went_wrong": "Указал 'floar' (ошибка), 'char', 'boolean', пропустил float и double",
+          "correct_answer": "float, double, char, boolean (8 примитивов: byte, short, int, long, float, double, char, boolean)",
+          "resources": [
+            "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html",
+            "Java Language Specification §4.2"
+          ]
+        },
+        {
+          "topic": "Профессиональная коммуникация",
+          "what_went_wrong": "Скопировал текст из заметок без проверки, отправил с опечаткой и посторонним комментарием",
+          "correct_answer": "Перед отправкой ответа необходимо проверять содержание и удалять технические пометки",
+          "resources": [
+            "Best practices: code review communication",
+            "Professional email etiquette in tech"
+          ]
+        },
+        {
+          "topic": "ООП (принципы)",
+          "what_went_wrong": "Тема не затронута в интервью",
+          "correct_answer": "Инкапсуляция, наследование, полиморфизм, абстракция",
+          "resources": [
+            "https://docs.oracle.com/javase/tutorial/java/concepts/",
+            "Effective Java by Joshua Bloch, Chapter 4"
+          ]
+        },
+        {
+          "topic": "HTTP/REST",
+          "what_went_wrong": "Тема не затронута в интервью",
+          "correct_answer": "HTTP методы (GET, POST, PUT, DELETE), статус-коды, принципы REST (stateless, resource-based, uniform interface)",
+          "resources": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP",
+            "RESTful Web Services by Leonard Richardson"
+          ]
+        },
+        {
+          "topic": "SQL/БД",
+          "what_went_wrong": "Тема не затронута в интервью",
+          "correct_answer": "SELECT, JOIN, WHERE, GROUP BY, основы нормализации, индексы",
+          "resources": [
+            "https://www.postgresql.org/docs/current/tutorial.html",
+            "SQL Tutorial на w3schools.com"
+          ]
+        },
+        {
+          "topic": "Git",
+          "what_went_wrong": "Тема не затронута в интервью",
+          "correct_answer": "commit, branch, merge, pull/push, конфликты слияния",
+          "resources": [
+            "https://git-scm.com/book/en/v2",
+            "Pro Git by Scott Chacon"
+          ]
+        },
+        {
+          "topic": "Тестирование и отладка",
+          "what_went_wrong": "Тема не затронута в интервью",
+          "correct_answer": "JUnit, написание unit-тестов, использование debugger, логирование",
+          "resources": [
+            "https://junit.org/junit5/docs/current/user-guide/",
+            "Effective Unit Testing by Lasse Koskela"
+          ]
+        }
+      ]
+    },
+    "soft_skills": {
+      "clarity": "Низкая: опечатки, посторонний текст из заметок, неструктурированный ответ",
+      "honesty": "Признал ошибку с копированием, но это указывает на невнимательность",
+      "engagement": "Средняя: отвечает на вопросы, но качество ответов неудовлетворительное"
+    },
+    "roadmap": {
+      "next_steps": [
+        "Изучить все 8 примитивных типов Java, их диапазоны и применение",
+        "Освоить основы ООП: написать примеры классов с инкапсуляцией, наследованием, полиморфизмом",
+        "Пройти курс по основам SQL: SELECT, JOIN, агрегатные функции",
+        "Изучить базовые операции Git: ветвление, слияние, разрешение конфликтов",
+        "Написать простое REST API на Spring Boot с CRUD операциями",
+        "Освоить JUnit: написать unit-тесты для своих классов",
+        "Практиковаться в отладке кода через IDE debugger"
+      ],
+      "resources": [
+        "https://docs.oracle.com/javase/tutorial/",
+        "Head First Java by Kathy Sierra",
+        "https://spring.io/guides/gs/rest-service/",
+        "https://www.codecademy.com/learn/learn-sql",
+        "https://learngitbranching.js.org/",
+        "https://junit.org/junit5/docs/current/user-guide/",
+        "JetBrains Academy: Java Developer track"
+      ]
+    },
+    "coverage": {
+      "topics_covered": [],
+      "topics_not_covered": [
+        "Java basics",
+        "OOP principles",
+        "HTTP & REST",
+        "DB & SQL basics",
+        "Git basics",
+        "Spring / Framework basics",
+        "Debugging & testing basics"
+      ],
+      "must_coverage": 3.6,
+      "overall_coverage": 3.6,
+      "notes": "Кандидат остановил интервью."
+    }
+  }
+}

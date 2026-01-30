@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from typing import Dict, List, Literal, Optional, Tuple
+import re
 
 from pydantic import BaseModel, Field
 
@@ -8,6 +9,62 @@ from .topic_catalog import get_backend_topics_for_grade
 
 Priority = Literal["must", "nice"]
 Status = Literal["pending", "in_progress", "covered", "skipped"]
+
+
+LANGUAGE_LABELS: Dict[str, str] = {
+    "python": "Python",
+    "java": "Java",
+    "csharp": "C#",
+    "javascript": "JavaScript",
+    "typescript": "TypeScript",
+    "go": "Go",
+    "php": "PHP",
+    "ruby": "Ruby",
+    "kotlin": "Kotlin",
+    "scala": "Scala",
+    "rust": "Rust",
+}
+
+LANGUAGE_PATTERNS: List[Tuple[str, List[str]]] = [
+    ("typescript", [r"\btypescript\b", r"\bts\b"]),
+    ("javascript", [r"\bjavascript\b", r"\bnode\.?js\b", r"\bnode\b"]),
+    ("python", [r"\bpython\b", r"\bdjango\b", r"\bdrf\b", r"\bfastapi\b", r"\bflask\b"]),
+    ("java", [r"\bjava\b", r"\bspring\b"]),
+    ("csharp", [r"\bc#\b", r"\bcsharp\b", r"\basp\.?net\b", r"\b\.net\b"]),
+    ("go", [r"\bgolang\b", r"\bgo developer\b"]),
+    ("php", [r"\bphp\b", r"\blaravel\b", r"\bsymfony\b"]),
+    ("ruby", [r"\bruby\b", r"\brails\b"]),
+    ("kotlin", [r"\bkotlin\b"]),
+    ("scala", [r"\bscala\b"]),
+    ("rust", [r"\brust\b"]),
+]
+
+FRAMEWORK_KEYWORDS: List[Tuple[str, List[str], List[str]]] = [
+    ("Django", ["django", "drf"], [r"\bdjango\b", r"\bdrf\b"]),
+    ("FastAPI", ["fastapi"], [r"\bfastapi\b"]),
+    ("Flask", ["flask"], [r"\bflask\b"]),
+    ("Spring", ["spring", "spring boot"], [r"\bspring\b"]),
+    ("ASP.NET Core", ["asp.net", ".net", "aspnet"], [r"\basp\.?net\b", r"\b\.net\b", r"\baspnet\b"]),
+    ("Node.js / Express", ["node", "express", "nestjs"], [r"\bnode\.?js\b", r"\bexpress\b", r"\bnest(js)?\b"]),
+    ("Laravel", ["laravel"], [r"\blaravel\b"]),
+    ("Symfony", ["symfony"], [r"\bsymfony\b"]),
+    ("Rails", ["rails"], [r"\brails\b"]),
+    ("Gin / Fiber", ["gin", "fiber"], [r"\bgin\b", r"\bfiber\b"]),
+]
+
+DEFAULT_FRAMEWORK_BY_LANG: Dict[str, Tuple[str, List[str]]] = {
+    "python": ("Django/Flask/FastAPI", ["django", "flask", "fastapi"]),
+    "java": ("Spring", ["spring"]),
+    "csharp": ("ASP.NET Core", ["asp.net", ".net"]),
+    "javascript": ("Node.js/Express", ["node", "express"]),
+    "typescript": ("Node.js/Nest", ["node", "nestjs", "typescript"]),
+    "go": ("Gin/Fiber", ["gin", "fiber"]),
+    "php": ("Laravel/Symfony", ["laravel", "symfony"]),
+    "ruby": ("Rails", ["rails"]),
+    "kotlin": ("Ktor/Spring", ["ktor", "spring"]),
+    "scala": ("Akka/Play", ["akka", "play"]),
+    "rust": ("Actix/Rocket", ["actix", "rocket"]),
+}
 
 
 class Topic(BaseModel):
@@ -80,12 +137,17 @@ def build_topic_plan(role: str, grade: str, experience_text: str) -> TopicPlan:
     exp_l = experience_text.lower()
     summary_bits: List[str] = []
 
-    if "django" in exp_l or "drf" in exp_l or "orm" in exp_l:
+    language = _infer_primary_language(role_l, exp_l)
+    framework_name, framework_tags, framework_hit = _infer_framework(exp_l, language)
+    _apply_language_and_framework(topics, language, framework_name, framework_tags)
+    if language:
+        summary_bits.append(f"язык={LANGUAGE_LABELS.get(language, language)}")
+    if framework_hit:
+        summary_bits.append(f"фреймворк={framework_name}")
         for t in topics:
             if t.id == "django_framework":
                 t.min_questions = max(t.min_questions, 2)
                 t.priority = "must"
-        summary_bits.append("усилить Django/ORM")
 
     if "sql" in exp_l and "немного" in exp_l:
         summary_bits.append("SQL с базовых вопросов")
@@ -103,6 +165,48 @@ def build_topic_plan(role: str, grade: str, experience_text: str) -> TopicPlan:
         summary += " Адаптации: " + "; ".join(summary_bits)
 
     return TopicPlan(role=role, grade=grade, topics=topics, rules=rules, summary=summary)
+
+
+def _infer_primary_language(role_text: str, experience_text: str) -> str:
+    text = f"{role_text} {experience_text}".lower()
+    for lang, patterns in LANGUAGE_PATTERNS:
+        for pattern in patterns:
+            if re.search(pattern, text):
+                return lang
+    return ""
+
+
+def _infer_framework(experience_text: str, language: str) -> Tuple[str, List[str], bool]:
+    text = experience_text.lower()
+    for name, tags, patterns in FRAMEWORK_KEYWORDS:
+        for pattern in patterns:
+            if re.search(pattern, text):
+                return name, tags, True
+    if language and language in DEFAULT_FRAMEWORK_BY_LANG:
+        name, tags = DEFAULT_FRAMEWORK_BY_LANG[language]
+        return name, tags, False
+    return "Web framework basics", ["framework", "backend"], False
+
+
+def _apply_language_and_framework(
+    topics: List[Topic],
+    language: str,
+    framework_name: str,
+    framework_tags: List[str],
+) -> None:
+    lang_label = LANGUAGE_LABELS.get(language, "")
+    for t in topics:
+        if t.id == "python_basics":
+            if lang_label:
+                t.name = f"{lang_label} basics"
+                t.tags = [tag for tag in t.tags if tag != "python"]
+                t.tags = [language] + [tag for tag in t.tags if tag != language]
+            else:
+                t.name = "Programming language basics"
+                t.tags = [tag for tag in t.tags if tag != "python"] + ["language"]
+        if t.id == "django_framework":
+            t.name = f"{framework_name} / Framework basics"
+            t.tags = list(dict.fromkeys((framework_tags or []) + ["framework", "web"]))
 
 
 # ---------- Progress + coverage ----------
@@ -178,6 +282,31 @@ def _eligible_topics(plan: TopicPlan, tracker: ProgressTracker, current_turn: in
     return eligible
 
 
+def _preferred_start_topic(plan: TopicPlan, eligible: List[Topic], current_turn: int) -> Topic | None:
+    if current_turn != 1:
+        return None
+    grade_l = plan.grade.lower()
+    if grade_l == "senior":
+        preferred_ids = [
+            "system_design_advanced",
+            "concurrency_deep",
+            "system_design",
+            "concurrency",
+            "performance",
+            "reliability",
+            "security",
+        ]
+    elif grade_l == "middle":
+        preferred_ids = ["system_design", "concurrency", "http_rest", "db_sql_basics"]
+    else:
+        return None
+    for pid in preferred_ids:
+        for topic in eligible:
+            if topic.id == pid and topic.status in {"pending", "in_progress"}:
+                return topic
+    return None
+
+
 def _topic_sort_key(topic: Topic, tracker: ProgressTracker) -> Tuple:
     stats = tracker.topic_stats.get(topic.id, TopicStats())
     completion = stats.asked / max(topic.min_questions, 1)
@@ -203,6 +332,13 @@ def select_next_topic(plan: TopicPlan, tracker: ProgressTracker, current_turn: i
     eligible = _eligible_topics(plan, tracker, current_turn)
     if not eligible:
         eligible = plan.topics  # fallback if everything on cooldown
+
+    preferred = _preferred_start_topic(plan, eligible, current_turn)
+    if preferred:
+        stats = tracker.topic_stats.get(preferred.id, TopicStats())
+        desired_diff = suggest_difficulty(base_difficulty, stats)
+        reason = f"start bias for grade={plan.grade}: picked {preferred.id}"
+        return TopicSelection(topic=preferred, reason=reason, desired_difficulty=desired_diff)
 
     must_target = plan.rules.target_must_coverage
     must_need = tracker.must_coverage < must_target

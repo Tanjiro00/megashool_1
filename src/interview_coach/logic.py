@@ -14,7 +14,7 @@ STOP_PHRASES = {
     "/stop",
 }
 PROGRESS_PHRASES = {"прогресс", "progress", "/progress"}
-ROLE_REVERSAL_HINTS = {"а ты", "а вы", "что ты думаешь", "твое мнение", "ваше мнение"}
+ROLE_REVERSAL_HINTS = {"а ты", "а вы", "что ты думаешь", "твое мнение", "ваше мнение", "ты мне скажи"}
 OFF_TOPIC_HINTS = {
     "кот",
     "кошка",
@@ -35,6 +35,7 @@ OFF_TOPIC_HINTS = {
     "новости",
     "путешествие",
     "еда",
+    "рецепт",
 }
 PROMPT_INJECTION_HINTS = {
     "ignore",
@@ -42,6 +43,7 @@ PROMPT_INJECTION_HINTS = {
     "перестань следовать",
     "забудь инструкции",
     "забудь правила",
+    "забудь что ты",
     "disregard",
     "forget previous",
     "system prompt",
@@ -66,7 +68,7 @@ CONTROVERSIAL_MARKERS = {
     "все знают",
     "python 4.0",
 }
-ROLE_CONTEXT_KEYWORDS = {"компания", "задачи", "команда", "проект", "роль", "продукт", "испытательный"}
+ROLE_CONTEXT_KEYWORDS = {"компания", "компании", "задачи", "команда", "проект", "роль", "продукт", "испытательный"}
 HONESTY_HINTS = {
     "не знаю",
     "не уверен",
@@ -85,11 +87,20 @@ def classify_intent(user_message: str) -> Intent:
         return Intent.STOP
     if any(p in text for p in PROGRESS_PHRASES):
         return Intent.PROGRESS
-    if any(h in text for h in ROLE_REVERSAL_HINTS) or text.endswith("?"):
+    if detect_role_reversal_request(user_message) or any(h in text for h in ROLE_REVERSAL_HINTS):
         return Intent.ROLE_REVERSAL
     if any(h in text for h in OFF_TOPIC_HINTS):
         return Intent.OFF_TOPIC
     return Intent.NORMAL_ANSWER
+
+
+def detect_role_reversal_request(user_message: str) -> bool:
+    text = user_message.lower()
+    if not any(k in text for k in ROLE_CONTEXT_KEYWORDS):
+        return False
+    if "?" in text:
+        return True
+    return bool(re.search(r"\b(расскаж|расскажите|опиши|опишите|поделис|что за|какая|какой|какие|сколько|где|кто)\b", text))
 
 
 def detect_off_topic_context(
@@ -102,6 +113,9 @@ def detect_off_topic_context(
     Flags messages that contain off-topic cues and lack overlap with the current topic/question.
     """
     text = user_message.lower()
+    # Honest admission is not off-topic
+    if detect_honesty(user_message):
+        return False
     # Short greetings or empty replies are handled elsewhere
     words = {w for w in re.findall(r"[a-zа-яё0-9]{3,}", text)}
     if not words:
@@ -125,8 +139,8 @@ def detect_off_topic_context(
         if overlap:
             return False
         # No overlap + presence of generic small-talk markers => off-topic
-        small_talk = {"как дела", "добрый", "привет", "здоров", "хаю", "ок", "ага"}
-        if any(marker in text for marker in small_talk) or len(words) <= 6:
+        small_talk = {"как дела", "добрый", "привет", "здоров", "хаю", "окей", "ок ", "ага"}
+        if any(marker in text for marker in small_talk):
             return True
 
     return False

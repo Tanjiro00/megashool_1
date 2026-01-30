@@ -1,67 +1,152 @@
-﻿# Interview Coach - multi-agent CLI для тренировки техинтервью
+﻿# Interview Coach - профессиональный multi-agent CLI для тренировки техинтервью
 
-**Interview Coach** - CLI-симулятор технического интервью на базе CrewAI. Система моделирует интервьюера, наблюдателя и hiring manager, задает вопросы по плану тем, оценивает ответы, адаптирует сложность и формирует финальный отчет.
+**Interview Coach** - CLI-симулятор технического интервью на базе CrewAI. Система моделирует интервьюера, наблюдателя и hiring manager, задает вопросы по плану тем, оценивает ответы, адаптирует сложность и формирует финальный отчет. Проект построен как устойчивый к ошибкам пайплайн с контролем качества, покрытием тем и безопасными fallbacks.
 
-## Возможности
-- Многоагентная архитектура: Interviewer, Observer, Hiring Manager.
-- Динамический план тем и трекинг покрытия (must/overall).
-- Адаптация сложности по ответам, грейду и опыту.
-- Поддержка разных стеков: язык и фреймворк определяются по позиции/опыту.
-- Контроль off-topic, prompt-injection, спорных утверждений.
-- Логи интервью и финальный отчет в JSON.
-- Режим сценариев (scripted) для автотестов и демо.
-- Offline stub, если нет ключей к LLM.
+## Ключевые преимущества
+- **Профессиональная архитектура**: отдельные агенты с четкими ролями и Pydantic-схемами.
+- **Адаптивность**: сложность и выбор тем динамически зависят от ответов, грейда и опыта.
+- **Стек-ориентированность**: язык и фреймворк определяются по позиции/опыту и отражаются в темах.
+- **Контроль качества**: детект off-topic, prompt-injection, спорных утверждений.
+- **Надежность**: строгая валидация JSON, устойчивые fallbacks, deterministic offline-режим.
+- **Прозрачность**: детальные логи каждого шага и итоговый отчет.
+- **Расширяемость**: темы, эвристики, инструменты и промпты легко кастомизируются.
+
+---
 
 ## Архитектура
 
+### Схема архитектуры
+```mermaid
+flowchart TD
+    U[Кандидат] --> CLI[CLI / main.py]
+    CLI --> OBS[Observer]
+    CLI --> PL[Planner]
+    CLI --> INT[Interviewer]
+    CLI --> PROG[Progress Tracker]
+    CLI --> LOG[Logger]
+
+    OBS --> OA[ObserverAnalysis JSON]
+    PL --> IP[InterviewerPlan JSON]
+    INT --> OUT[Финальная реплика]
+
+    PROG --> COV[Coverage + Difficulty]
+    LOG --> FILES[logs/*.json]
+
+    INT -->|web_search| WS[tooling.py]
+    WS --> TAV[Tavily]
+    WS --> DDG[DuckDuckGo]
+    WS --> API[DDG API]
+    WS --> SX[SearXNG]
+    WS --> SO[StackOverflow API]
+```
+
 ### Роли агентов
-- **Interviewer** - ведет интервью, задает следующий вопрос и дает короткий комментарий.
-- **Observer** - анализирует ответ, оценивает корректность и предлагает follow-up.
-- **Hiring Manager** - формирует итоговый отчет и рекомендации.
+
+#### Interviewer (Интервьюер)
+**Цель:** вести интервью, удерживать тему, задавать вопросы и давать краткий разбор.
+**Что делает:**
+- Получает план вопроса (InterviewerPlan) и формирует финальную реплику.
+- Дает краткую реакцию/мини-объяснение на ответы кандидата.
+- Корректирует неверные ответы и задает уточняющие вопросы.
+- Использует web_search при необходимости свежих фактов.
+
+**Использует:**
+- `INTERVIEWER_SYSTEM_PROMPT` (`prompts.py`)
+- План от Planner (`InterviewerPlan`)
+- Инструмент `web_search` через `tooling.py` при сомнениях
+
+#### Observer (Наблюдатель)
+**Цель:** объективно оценить ответ кандидата и подсказать следующий шаг.
+**Что делает:**
+- Определяет intent (NORMAL_ANSWER / OFF_TOPIC / ROLE_REVERSAL / STOP).
+- Оценивает корректность (CORRECT/PARTIALLY/INCORRECT/UNKNOWN).
+- Выделяет gaps и рекомендует follow-up.
+- Фиксирует prompt-injection и спорные утверждения.
+
+**Использует:**
+- `OBSERVER_SYSTEM_PROMPT` (`prompts.py`)
+- Контекст последних Q/A и текущей темы
+
+#### Hiring Manager
+**Цель:** подвести итог интервью и сформировать финальный отчет.
+**Что делает:**
+- Формирует итоговое решение (grade/decision/confidence).
+- Выписывает знания/пробелы и ресурсы для обучения.
+
+**Использует:**
+- `HIRING_MANAGER_PROMPT`
+- Summary + coverage метрики
+
+---
 
 ### Поток выполнения (упрощенно)
 ```
 Пользователь -> CLI (main.py)
-  -> Observer: анализ ответа -> ObserverAnalysis
+  -> Observer: анализ ответа -> ObserverAnalysis (JSON)
   -> Planner: формирует InterviewerPlan
   -> Interviewer: финальная фраза (реакция + вопрос)
   -> Progress: обновление покрытия тем и сложности
   -> Logger: сохранение шага
 ```
 
-### Основные компоненты
-- `main.py` - главный цикл интервью, выбор тем, обновление сложности, интеграция агентов.
-- `crewai_setup.py` - создание агентов и задач CrewAI.
-- `prompts.py` - системные промпты агентов.
-- `topics.py` - построение плана тем и выбор следующей темы.
-- `topic_catalog.py` - каталог тем по ролям/грейдам.
-- `logic.py` - эвристики intent/off-topic/prompt-injection/спорных утверждений.
-- `tooling.py` - web_search инструмент (Tavily -> DDG -> DDG API -> SearX -> StackOverflow).
-- `schemas.py` - Pydantic схемы данных.
-- `logger.py` - сохранение логов и финального отчета.
+---
 
-### Как учитывается грейд и опыт
+## Компоненты и их функции
+- `main.py` - главный цикл интервью, сбор профиля, выбор тем, смена сложности, интеграция агентов.
+- `crewai_setup.py` - создание агентов, описание задач, интеграция промптов и инструментов.
+- `prompts.py` - системные правила поведения агентов (стиль, контент, безопасность).
+- `topics.py` - построение TopicPlan, выбор темы, трекинг покрытия, адаптация стека.
+- `topic_catalog.py` - каталог тем для Backend по грейдам.
+- `logic.py` - эвристики intent/off-topic/prompt-injection/controversial.
+- `tooling.py` - web_search инструмент и его fallback цепочка.
+- `schemas.py` - строгие Pydantic модели (ObserverAnalysis, InterviewerPlan, FinalFeedback).
+- `logger.py` - запись логов и итогового отчета.
+- `scenario_runner.py` - запуск сценариев для тестов и демо.
+
+---
+
+## Как учитывается грейд и опыт
 - Стартовая сложность: Junior=2, Middle=3, Senior=4.
-- Если в опыте >= 8 лет, сложность повышается на 1 (до максимума 5).
-- Если в опыте <= 1 года, сложность понижается на 1.
-- Для Senior есть стартовый сдвиг в сторону system design/конкурентности.
+- Если опыт >= 8 лет, сложность повышается на 1 (до 5).
+- Если опыт <= 1 года, сложность понижается на 1.
+- Для Senior есть стартовый приоритет system design/конкурентности.
 
-## Структура проекта
-```
-src/interview_coach/
-  main.py              # CLI и главный цикл интервью
-  prompts.py           # системные промпты
-  crewai_setup.py      # агенты и задачи CrewAI
-  topics.py            # план тем и выбор темы
-  topic_catalog.py     # каталог тем
-  logic.py             # эвристики intent/off-topic/prompt-injection
-  schemas.py           # Pydantic модели
-  tooling.py           # web_search инструмент
-  config.py            # конфигурация LLM и offline stub
-  logger.py            # логирование интервью
-  resources.py         # ссылки на ресурсы для фидбэка
-  scenario_runner.py   # запуск сценариев
-```
+---
+
+## Как используются темы и стек
+- Базовый каталог тем - `topic_catalog.py`.
+- План зависит от грейда (Junior/Middle/Senior).
+- Язык и фреймворк определяются по позиции/опыту и переименовывают темы
+  (например, `Java basics`, `Spring / Framework basics`).
+- Must темы требуют минимального числа вопросов и достаточной средней оценки.
+
+---
+
+## Web Search: как используется
+Инструмент web_search реализован в `tooling.py` и подключается к Interviewer.
+
+**Алгоритм:**
+1. Сначала используется Tavily (если задан `TAVILY_API_KEY`).
+2. Если Tavily недоступен - DuckDuckGo через `duckduckgo_search`.
+3. Далее fallback - DuckDuckGo Instant Answer API.
+4. Далее - SearXNG (если задан `SEARX_URL`).
+5. Последний fallback - StackOverflow Search API.
+
+**Особенности:**
+- Результаты кэшируются в памяти (`_CACHE`) для снижения нагрузки и ускорения.
+- Интервьюер использует web_search только при неуверенности в фактах.
+- Инструмент всегда безопасен: возвращает пустой список при ошибках.
+
+---
+
+## Почему решение выглядит профессионально
+- **Многоуровневая валидация** (Pydantic + fallback JSON-парсинг).
+- **Стабильность** (offline stub, retry при ошибках, устойчивые fallbacks).
+- **Управляемость** (ограничение длины ответов, строгие правила в промптах).
+- **Метрики качества** (coverage, difficulty, scoring, confidence).
+- **Модульность** (каждый блок можно заменить или расширить без переписывания ядра).
+
+---
 
 ## Установка
 ```powershell
@@ -71,10 +156,12 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## Конфигурация
-Без ключей включается детерминированный offline stub.
+---
 
-Основные переменные окружения:
+## Конфигурация
+Без ключей включается deterministic offline stub.
+
+Переменные окружения:
 - `OPENAI_API_KEY` - ключ OpenAI (или OpenRouter, если начинается с `sk-or-`).
 - `ANTHROPIC_API_KEY` - ключ Anthropic.
 - `MODEL_NAME` - модель (по умолчанию `gpt-4o-mini`).
@@ -83,19 +170,7 @@ pip install -e .
 - `SEARX_URL` - SearXNG fallback.
 - `MOCK_MODE=true` - принудительный offline stub.
 
-Пример:
-```powershell
-$env:OPENAI_API_KEY="sk-..."
-$env:MODEL_NAME="gpt-4o-mini"
-
-$env:TAVILY_API_KEY="tvly-..."
-
-$env:OPENROUTER_API_KEY="sk-or-..."
-$env:OPENROUTER_MODEL="openrouter/auto"
-$env:OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
-$env:OPENAI_API_KEY=$env:OPENROUTER_API_KEY
-$env:OPENAI_BASE_URL=$env:OPENROUTER_BASE_URL
-```
+---
 
 ## Запуск
 ### Интерактивно
@@ -118,6 +193,8 @@ python -m interview_coach.main --name "Иван" --position "Backend" --grade "M
 python -m interview_coach.scenario_runner scenarios/example_secret_scenario.json
 ```
 
+---
+
 ## Логи
 Логи сохраняются в `logs/interview_log_YYYYMMDD_HHMMSS.json`.
 
@@ -137,21 +214,21 @@ python -m interview_coach.scenario_runner scenarios/example_secret_scenario.json
 }
 ```
 
-## Как формируются темы и стек
-- Базовый каталог тем - `topic_catalog.py`.
-- План зависит от грейда (Junior/Middle/Senior).
-- Язык и фреймворк определяются из текста позиции/опыта и переименовывают темы
-  (например, `Java basics`, `Spring / Framework basics`).
+---
+
+## Как адаптировать под свой стек
+1. Обновите `topic_catalog.py` для новых ролей/тем.
+2. Добавьте ключевые слова языков/фреймворков в `topics.py`.
+3. Настройте поведение агентов в `prompts.py`.
+
+---
 
 ## Тесты
 ```powershell
 pytest
 ```
 
-## Как адаптировать под свой стек
-1. Обновите `topic_catalog.py` для новых ролей/тем.
-2. Добавьте ключевые слова языков/фреймворков в `topics.py`.
-3. Настройте поведение агентов в `prompts.py`.
+---
 
 ## Ограничения
 - Эвристики intent/off-topic не идеальны.

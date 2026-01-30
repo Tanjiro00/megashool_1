@@ -1,0 +1,65 @@
+{
+  "participant_name": "TestUser",
+  "created_at_utc": "2026-01-30T16:40:02.265872",
+  "turns": [
+    {
+      "turn_id": 1,
+      "agent_visible_message": "Расскажите про сложность бинарного поиска?",
+      "user_message": "Привет",
+      "internal_thoughts": "[Observer]: Keep steady, probe depth [Planner]: selected_topic=oop_principles diff=2 coverage(must/overall)=0.04/0.04 reason=must coverage=0.04 target=0.85; picked oop_principles (asked=0, avg=0.00)"
+    }
+  ],
+  "final_feedback": {
+    "decision": {
+      "grade": "Middle",
+      "hiring_recommendation": "Hire",
+      "confidence_score": 70
+    },
+    "hard_skills": {
+      "confirmed_skills": [
+        {
+          "topic": "Python",
+          "evidence": "solid answers"
+        }
+      ],
+      "knowledge_gaps": [
+        {
+          "topic": "Concurrency",
+          "what_went_wrong": "shallow",
+          "correct_answer": "Use asyncio event loop",
+          "resources": [
+            "https://docs.python.org/3/library/asyncio.html"
+          ]
+        }
+      ]
+    },
+    "soft_skills": {
+      "clarity": "Good",
+      "honesty": "High",
+      "engagement": "Engaged"
+    },
+    "roadmap": {
+      "next_steps": [
+        "Deepen concurrency"
+      ],
+      "resources": [
+        "https://docs.python.org/3/"
+      ]
+    },
+    "coverage": {
+      "topics_covered": [],
+      "topics_not_covered": [
+        "Python basics",
+        "OOP principles",
+        "HTTP & REST",
+        "DB & SQL basics",
+        "Git basics",
+        "Django / Framework basics",
+        "Debugging & testing basics"
+      ],
+      "must_coverage": 3.6,
+      "overall_coverage": 3.6,
+      "notes": "Кандидат остановил интервью."
+    }
+  }
+}

@@ -16,7 +16,13 @@ def load_scenario(path: str | Path) -> List[str]:
     raise ValueError("Unsupported scenario format; expected list or {messages: []}")
 
 
-def run_scenario(path: str | Path, participant_name: str = "Тест", position: str = "Python Developer", grade: str = "Middle", experience: str = "3 года"):
+def run_scenario(
+    path: str | Path,
+    participant_name: str = "Тест",
+    position: str = "Python Developer",
+    grade: str = "Middle",
+    experience: str = "3 года",
+):
     messages = load_scenario(path)
     scenario_name = Path(path).stem
     log_filename = f"{scenario_name}_log.json"
@@ -28,7 +34,7 @@ def run_scenario(path: str | Path, participant_name: str = "Тест", position:
         scripted_answers=messages,
         log_filename=log_filename,
     )
-    print(f"Сценарий завершен. Лог: {log_path}")
+    print(f"Сценарий завершён. Лог: {log_path}")
     return feedback, log_path
 
 

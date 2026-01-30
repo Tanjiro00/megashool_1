@@ -1,0 +1,77 @@
+{
+  "participant_name": "Scripted",
+  "created_at_utc": "2026-01-30T19:20:10.557050",
+  "turns": [
+    {
+      "turn_id": 1,
+      "agent_visible_message": "Расскажите про сложность бинарного поиска?",
+      "user_message": "Привет, я готов!",
+      "internal_thoughts": "[Observer]: Heuristic: off-topic (нет перекрытия с темой) [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.03/0.02 reason=Тема python_basics ещё не покрыта (asked=1, status=in_progress); остаёмся. off_topic=True controversial=False injection=False"
+    },
+    {
+      "turn_id": 2,
+      "agent_visible_message": "Начнём с темы Python basics: какие ключевые понятия вы знаете?",
+      "user_message": "А ты что думаешь про микросервисы?",
+      "internal_thoughts": "[Observer]: Heuristic: off-topic (нет перекрытия с темой) [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.06/0.04 reason=Тема python_basics ещё не покрыта (asked=2, status=in_progress); остаёмся. off_topic=True controversial=False injection=False"
+    }
+  ],
+  "final_feedback": {
+    "decision": {
+      "grade": "Middle",
+      "hiring_recommendation": "Hire",
+      "confidence_score": 0
+    },
+    "hard_skills": {
+      "confirmed_skills": [
+        {
+          "topic": "Python",
+          "evidence": "solid answers"
+        }
+      ],
+      "knowledge_gaps": [
+        {
+          "topic": "Concurrency",
+          "what_went_wrong": "shallow",
+          "correct_answer": "Use asyncio event loop",
+          "resources": [
+            "https://docs.python.org/3/library/asyncio.html"
+          ]
+        }
+      ]
+    },
+    "soft_skills": {
+      "clarity": "Good",
+      "honesty": "High",
+      "engagement": "Engaged"
+    },
+    "roadmap": {
+      "next_steps": [
+        "Deepen concurrency"
+      ],
+      "resources": [
+        "https://docs.python.org/3/"
+      ]
+    },
+    "coverage": {
+      "topics_covered": [],
+      "topics_not_covered": [
+        "Python basics",
+        "OOP principles",
+        "HTTP & REST",
+        "DB & SQL basics",
+        "Git basics",
+        "Django / Framework basics",
+        "Debugging & testing basics",
+        "System design fundamentals",
+        "Concurrency & async",
+        "Performance & profiling",
+        "Caching",
+        "Security basics",
+        "CI/CD"
+      ],
+      "must_coverage": 5.6,
+      "overall_coverage": 3.8,
+      "notes": "Кандидат остановил интервью."
+    }
+  }
+}

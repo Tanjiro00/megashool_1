@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 from dataclasses import dataclass
@@ -38,13 +38,14 @@ class DeterministicLLM:
                 '{"detected_intent": "NORMAL_ANSWER", "answer_score": 2, '
                 '"correctness":"PARTIALLY_CORRECT","key_strengths":["clear"],'
                 '"key_gaps":["missing complexity"],"hallucination_flags":[],'
+                '"topic_id":"python_basics",'
                 '"recommended_followup":"Ask about edge cases", "difficulty_delta":0,'
                 '"internal_memo":"Keep steady, probe depth"}'
             )
         if "InterviewerPlan" in last:
             return (
                 '{"next_action":"ASK_QUESTION","next_question":"Расскажите про сложность бинарного поиска?",'
-                '"topic":"algorithms","difficulty":2,"internal_memo":"Stay neutral"}'
+                '"topic":"algorithms","topic_id":"algorithms","difficulty":2,"internal_memo":"Stay neutral"}'
             )
         if "FinalFeedback" in last:
             return (
@@ -53,7 +54,9 @@ class DeterministicLLM:
                 '"knowledge_gaps":[{"topic":"Concurrency","what_went_wrong":"shallow","correct_answer":"Use asyncio event loop",'
                 '"resources":["https://docs.python.org/3/library/asyncio.html"]}]},'
                 '"soft_skills":{"clarity":"Good","honesty":"High","engagement":"Engaged"},'
-                '"roadmap":{"next_steps":["Deepen concurrency"],"resources":["https://docs.python.org/3/"]}}'
+                '"roadmap":{"next_steps":["Deepen concurrency"],"resources":["https://docs.python.org/3/"]},'
+                '"coverage":{"topics_covered":["python_basics"],"topics_not_covered":["concurrency"],'
+                '"must_coverage":0.6,"overall_coverage":0.5}}'
             )
         return "Okay."
 
@@ -70,6 +73,14 @@ class DeterministicLLM:
 
 def get_llm():
     config = AppConfig.load()
+    # Heuristic: OpenRouter key was put into OPENAI_API_KEY directly
+    if not config.openrouter_api_key and config.openai_api_key and config.openai_api_key.startswith("sk-or-"):
+        config.openrouter_api_key = config.openai_api_key
+        os.environ.setdefault("OPENROUTER_API_KEY", config.openai_api_key)
+        os.environ.setdefault("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        # prevent hitting api.openai.com with OpenRouter key
+        os.environ.setdefault("OPENAI_BASE_URL", os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"))
+
     if config.mock_mode:
         return DeterministicLLM(), config
     try:

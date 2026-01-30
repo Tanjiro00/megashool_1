@@ -10,9 +10,20 @@ from .schemas import (
     InterviewerPlan,
     ObserverAnalysis,
 )
+from .topics import TopicSelection
+from .tooling import SEARCH_TOOL_NAME, search_tool
+
+try:
+    from crewai_tools import tool as tool_decorator  # optional dependency
+except Exception:
+    tool_decorator = None
 
 try:
     from crewai import Agent, Crew, Process, Task
+    try:
+        from duckduckgo_search import DDGS
+    except Exception:  # optional dependency for tool
+        DDGS = None
 except ImportError:  # Lightweight stubs to allow offline execution
     class Agent:
         def __init__(self, role: str, goal: str, backstory: str, verbose: bool, llm: Any, **kwargs: Any):
@@ -67,10 +78,30 @@ except ImportError:  # Lightweight stubs to allow offline execution
                 outputs.append(task.execute(inputs or {}))
             return outputs
 
+    # make DDGS usable in stub mode
+    class DummyDDGS:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def text(self, query: str, max_results: int = 3):
+            return []
+
+    DDGS = DummyDDGS
+
 from .logic import question_already_covered
 
 
 def build_agents(llm) -> Tuple[Any, Any, Any]:
+    tools = []
+    if tool_decorator:
+        try:
+            wrapped = tool_decorator("Поиск в вебе (DuckDuckGo/Tavily)")(search_tool)
+            tools.append(wrapped)
+        except Exception:
+            tools = []
     observer = Agent(
         role="Observer",
         goal="Evaluate answers and guide next steps",
@@ -84,6 +115,7 @@ def build_agents(llm) -> Tuple[Any, Any, Any]:
         backstory=INTERVIEWER_SYSTEM_PROMPT,
         verbose=False,
         llm=llm,
+        tools=tools,
     )
     manager = Agent(
         role="Hiring Manager",
@@ -95,14 +127,37 @@ def build_agents(llm) -> Tuple[Any, Any, Any]:
     return observer, interviewer, manager
 
 
-def observer_task(observer_agent, state_summary: str, last_question: str, user_message: str) -> Task:
+# ---------- Tools ----------
+
+def search_tool(query: str, max_results: int = 3) -> List[Dict[str, str]]:
+    # Deprecated shim: left for backward compatibility
+    from .tooling import search_tool as _st
+
+    return _st(query, max_results)
+
+
+def observer_task(
+    observer_agent,
+    state_summary: str,
+    recent_qa: str,
+    known_facts: str,
+    last_question: str,
+    user_message: str,
+    topic_id: str | None,
+    extra_hint: str = "",
+) -> Task:
     description = (
         f"{OBSERVER_SYSTEM_PROMPT}\n\n"
         f"Last interviewer question: {last_question}\n"
         f"User answer: {user_message}\n"
+        f"Recent Q/A (last turns): {recent_qa or '—'}\n"
+        f"Known facts so far: {known_facts or '—'}\n"
+        f"Topic in focus: {topic_id or 'general'} (верни topic_id в JSON)\n"
         f"State summary: {state_summary}\n"
         "Return ObserverAnalysis JSON."
     )
+    if extra_hint:
+        description += f"\n{extra_hint}"
     return Task(
         description=description,
         expected_output="Valid JSON for ObserverAnalysis schema.",
@@ -111,16 +166,43 @@ def observer_task(observer_agent, state_summary: str, last_question: str, user_m
     )
 
 
-def planner_task(interviewer_agent, analysis: ObserverAnalysis, state_summary: str, difficulty: int) -> Task:
+def planner_task(
+    interviewer_agent,
+    analysis: ObserverAnalysis,
+    state_summary: str,
+    difficulty: int,
+    selection: TopicSelection,
+    coverage_hint: dict,
+    recent_qa: str,
+    known_facts: str,
+    extra_hint: str = "",
+) -> Task:
+    # Guidance for next_action to make behaviour deterministic
+    next_action_rules = (
+        "Определи next_action: "
+        "если intent=ROLE_REVERSAL => ANSWER_ROLE_REVERSAL_THEN_ASK; "
+        "если intent=OFF_TOPIC => REDIRECT_AND_ASK; "
+        "если нужен уточняющий вопрос или ответ неясен => CLARIFY_THEN_ASK; "
+        "иначе ASK_QUESTION. Всегда задавай конкретный следующий вопрос."
+    )
     description = (
         f"{INTERVIEWER_SYSTEM_PROMPT}\n"
         f"Observer memo: {analysis.internal_memo}\n"
         f"Detected intent: {analysis.detected_intent}\n"
         f"Recommended follow-up: {analysis.recommended_followup}\n"
         f"Desired difficulty: {difficulty}\n"
+        f"Selected topic (fixed): {selection.topic.name} [{selection.topic.id}] priority={selection.topic.priority}\n"
+        f"Topic tags: {', '.join(selection.topic.tags)}\n"
+        f"Coverage: must={coverage_hint.get('must', 0):.2f} overall={coverage_hint.get('overall', 0):.2f}\n"
+        f"Recent Q/A: {recent_qa or '—'}\n"
+        f"Known facts: {known_facts or '—'}\n"
+        f"{next_action_rules}\n"
         f"State summary: {state_summary}\n"
-        "Produce InterviewerPlan JSON."
+        "Stay within the selected topic; do not switch topics. Варьируй формулировки, не повторяй дословно предыдущие вопросы. "
+        "Сформируй InterviewerPlan JSON с topic_id, next_action и конкретным next_question."
     )
+    if extra_hint:
+        description += f"\n{extra_hint}"
     return Task(
         description=description,
         expected_output="Valid JSON for InterviewerPlan schema.",
@@ -129,18 +211,34 @@ def planner_task(interviewer_agent, analysis: ObserverAnalysis, state_summary: s
     )
 
 
-def interviewer_task(interviewer_agent, plan: InterviewerPlan) -> Task:
+def interviewer_task(interviewer_agent, plan: InterviewerPlan, last_user_message: str) -> Task:
     description = (
         f"{INTERVIEWER_SYSTEM_PROMPT}\n"
-        f"Plan: next_action={plan.next_action}, topic={plan.topic}, difficulty={plan.difficulty}\n"
+        f"Plan: next_action={plan.next_action}, topic={plan.topic} ({getattr(plan, 'topic_id', None)}), difficulty={plan.difficulty}\n"
         f"Next question draft: {plan.next_question}\n"
-        "Return the exact user-facing question/message only."
+        f"Last user message (for role-reversal/redirect/clarify): {last_user_message}\n"
+        "Собери финальное сообщение для кандидата, строго следуя next_action:\n"
+        "- ANSWER_ROLE_REVERSAL_THEN_ASK: кратко ответь на вопрос кандидата (1–2 предложения, без домыслов), затем задай новый технический вопрос.\n"
+        "- REDIRECT_AND_ASK: мягко верни беседу к теме и задай релевантный вопрос.\n"
+        "- CLARIFY_THEN_ASK: попроси уточнить конкретную деталь, затем задай технический вопрос.\n"
+        "- ASK_QUESTION: задай только технический вопрос.\n"
+        "Не добавляй пояснения о правилах. Верни только финальный текст для кандидата."
     )
     return Task(description=description, expected_output="Single interviewer message.", agent=interviewer_agent)
 
 
-def build_turn_crew(observer, interviewer, state_summary: str, last_question: str, user_message: str, difficulty: int) -> Crew:
-    obs_task = observer_task(observer, state_summary, last_question, user_message)
+def build_turn_crew(
+    observer,
+    interviewer,
+    state_summary: str,
+    recent_qa: str,
+    known_facts: str,
+    last_question: str,
+    user_message: str,
+    difficulty: int,
+    topic_id: str | None,
+) -> Crew:
+    obs_task = observer_task(observer, state_summary, recent_qa, known_facts, last_question, user_message, topic_id)
     # placeholder plan; actual plan uses observer output after kickoff? With sequential process, outputs list in order
     # We rebuild plan task after observer result inside calling code to ensure latest data.
     # So here we only include obs_task; planner/interviewer tasks built dynamically after observer output.
@@ -148,10 +246,22 @@ def build_turn_crew(observer, interviewer, state_summary: str, last_question: st
 
 
 def build_feedback_crew(manager, summary: str, state) -> Crew:
+    coverage_line = ""
+    try:
+        if getattr(state, "progress", None) and getattr(state, "topic_plan", None):
+            covered = [t.id for t in state.topic_plan.topics if t.status == "covered"]
+            pending = [t.id for t in state.topic_plan.topics if t.status != "covered"]
+            coverage_line = (
+                f"Topic coverage: must={state.progress.must_coverage:.2f}, overall={state.progress.overall_coverage:.2f}; "
+                f"covered={covered}; not_covered={pending}. "
+            )
+    except Exception:
+        coverage_line = ""
     description = (
         f"{HIRING_MANAGER_PROMPT}\n"
         f"Candidate profile: {state.participant_name}, position={state.position}, grade={state.grade}, experience={state.experience}\n"
         f"Conversation summary: {summary}\n"
+        f"{coverage_line}"
         "Generate FinalFeedback JSON."
     )
     task = Task(

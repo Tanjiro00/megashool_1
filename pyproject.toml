@@ -9,7 +9,13 @@ description = "Multi-agent interview coach using CrewAI"
 authors = [{ name = "Codex" }]
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+  "crewai>=0.41.0",
+  "crewai-tools>=0.11.0",
+  "pydantic>=2.4.2,<3",
+  "duckduckgo-search>=6.1.7",
+  "tavily-python>=0.3.5",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/interview_coach"]

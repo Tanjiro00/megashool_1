@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
+
+from .topics import ProgressTracker, TopicPlan
 
 
 class Intent(str, Enum):
     NORMAL_ANSWER = "NORMAL_ANSWER"
     OFF_TOPIC = "OFF_TOPIC"
     ROLE_REVERSAL = "ROLE_REVERSAL"
+    PROGRESS = "PROGRESS"
     STOP = "STOP"
 
 
@@ -27,6 +30,7 @@ class ObserverAnalysis(BaseModel):
     key_strengths: List[str] = Field(default_factory=list, max_length=3)
     key_gaps: List[str] = Field(default_factory=list, max_length=3)
     hallucination_flags: List[str] = Field(default_factory=list)
+    topic_id: Optional[str] = None
     recommended_followup: str
     difficulty_delta: int = Field(..., ge=-1, le=1)
     internal_memo: str = Field(..., max_length=400)
@@ -47,6 +51,7 @@ class InterviewerPlan(BaseModel):
     next_action: NextAction
     next_question: str
     topic: str
+    topic_id: Optional[str] = None
     difficulty: int = Field(..., ge=1, le=5)
     internal_memo: str = Field(..., max_length=300)
 
@@ -97,11 +102,20 @@ class Roadmap(BaseModel):
     resources: List[str] = Field(default_factory=list)
 
 
+class CoverageSection(BaseModel):
+    topics_covered: List[str] = Field(default_factory=list)
+    topics_not_covered: List[str] = Field(default_factory=list)
+    must_coverage: float = 0.0
+    overall_coverage: float = 0.0
+    notes: Optional[str] = None
+
+
 class FinalFeedback(BaseModel):
     decision: Decision
     hard_skills: HardSkills
     soft_skills: SoftSkills
     roadmap: Roadmap
+    coverage: CoverageSection | None = None
 
 
 class ConversationTurn(BaseModel):
@@ -125,6 +139,12 @@ class SessionState(BaseModel):
     needs_clarification: bool = False
     running_summary: str = ""
     recent_scores: List[int] = Field(default_factory=list)
+    topic_plan: TopicPlan | None = None
+    progress: ProgressTracker | None = None
+    current_topic_id: str | None = None
+    coverage_threshold: float = 0.7
+    max_turns: int | None = None
+    honesty_count: int = 0
 
     def remember_recent(self, n: int = 3) -> List[ConversationTurn]:
         return self.history[-n:]

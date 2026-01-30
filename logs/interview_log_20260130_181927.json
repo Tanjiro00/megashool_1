@@ -1,0 +1,107 @@
+{
+  "participant_name": "Даня",
+  "created_at_utc": "2026-01-30T18:11:41.158714",
+  "turns": [
+    {
+      "turn_id": 1,
+      "agent_visible_message": "Расскажите, пожалуйста, чем отличаются списки (list) от кортежей (tuple) в Python?",
+      "user_message": "я какать ушел",
+      "internal_thoughts": "[Observer]: Кандидат игнорирует вопрос, дал бессмысленный ответ. Нет знаний по теме. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.00/0.00 reason=Тема python_basics ещё не покрыта (asked=1, status=in_progress); остаёмся."
+    },
+    {
+      "turn_id": 2,
+      "agent_visible_message": "Давайте вернёмся к теме. Давайте вернёмся к основам Python. Пожалуйста, объясните, чем отличаются списки (list) от кортежей (tuple).",
+      "user_message": "не знаю",
+      "internal_thoughts": "[Observer]: Кандидат дважды не ответил по теме. Честно, но некомпетентен в basics. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.00/0.00 reason=Тема python_basics ещё не покрыта (asked=2, status=in_progress); остаёмся."
+    },
+    {
+      "turn_id": 3,
+      "agent_visible_message": "Давайте вернёмся к теме. Давайте сосредоточимся на теме. Подсказка: списки изменяемы (mutable), кортежи — нет (immutable). Объясните разницу.",
+      "user_message": "ну вот как раз, списки изменяемы, а кортежи нет",
+      "internal_thoughts": "[Observer]: Прогресс: с подсказкой дал верный базовый ответ после троллинга и 'не знаю'. Нужны детали. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.02/0.01 reason=Тема python_basics ещё не покрыта (asked=3, status=in_progress); остаёмся."
+    },
+    {
+      "turn_id": 4,
+      "agent_visible_message": "Пожалуйста, приведите примеры кода для mutable списка и immutable кортежа, объясните последствия неизменяемости.",
+      "user_message": "я не знаю, давай следующий вопрос",
+      "internal_thoughts": "[Observer]: Кандидат избегает деталей, просит следующий. Базовые знания только поверхностные с подсказкой. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.01/0.01 reason=Тема python_basics ещё не покрыта (asked=4, status=in_progress); остаёмся."
+    },
+    {
+      "turn_id": 5,
+      "agent_visible_message": "Хорошо, перейдём дальше. Что такое словарь (dict) в Python? Приведите простой пример.",
+      "user_message": "это структра основанная на хэшах",
+      "internal_thoughts": "[Observer]: Прогресс: знает суть dict, но поверхностно, без примера. Нужно углубить. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.02/0.02 reason=Тема python_basics ещё не покрыта (asked=5, status=in_progress); остаёмся."
+    },
+    {
+      "turn_id": 6,
+      "agent_visible_message": "Отлично. Приведите пример создания словаря (dict) и доступа к его значению.",
+      "user_message": "а расскажи про свою компанию",
+      "internal_thoughts": "[Observer]: Кандидат уклоняется через role reversal. Поверхностные знания, не фокусируется на задаче. [Planner]: selected_topic=python_basics diff=1 coverage(must/overall)=0.02/0.01 reason=Тема python_basics ещё не покрыта (asked=6, status=in_progress); остаёмся."
+    }
+  ],
+  "final_feedback": {
+    "decision": {
+      "grade": "Junior",
+      "hiring_recommendation": "NoHire",
+      "confidence_score": 95
+    },
+    "hard_skills": {
+      "confirmed_skills": [],
+      "knowledge_gaps": [
+        {
+          "topic": "Основы Python (mutable списки)",
+          "what_went_wrong": "Не знает пример кода для mutable списков, попросил следующий вопрос",
+          "correct_answer": "Списки изменяемы: lst = [1, 2, 3]; lst.append(4); print(lst)  # [1, 2, 3, 4]",
+          "resources": [
+            "https://docs.python.org/3/tutorial/datastructures.html#more-on-lists"
+          ]
+        },
+        {
+          "topic": "Основы Python (словари)",
+          "what_went_wrong": "Уклонился от примера создания dict, спросил о компании",
+          "correct_answer": "d = {'a': 1}; или d = dict(a=1)",
+          "resources": [
+            "https://docs.python.org/3/tutorial/datastructures.html#dictionaries"
+          ]
+        }
+      ]
+    },
+    "soft_skills": {
+      "clarity": "Низкая: ответы краткие, без примеров",
+      "honesty": "Средняя: признал незнание, но уклонился",
+      "engagement": "Низкая: переводит тему на компанию"
+    },
+    "roadmap": {
+      "next_steps": [
+        "Изучить основы Python: списки, словари",
+        "Практиковать код на LeetCode/HackerRank",
+        "Повторить собеседование через месяц"
+      ],
+      "resources": [
+        "https://docs.python.org/3/tutorial/datastructures.html",
+        "https://realpython.com/python-data-structures/"
+      ]
+    },
+    "coverage": {
+      "topics_covered": [],
+      "topics_not_covered": [
+        "Python basics",
+        "OOP principles",
+        "HTTP & REST",
+        "DB & SQL basics",
+        "Git basics",
+        "Django / Framework basics",
+        "Debugging & testing basics",
+        "System design fundamentals",
+        "Concurrency & async",
+        "Performance & profiling",
+        "Caching",
+        "Security basics",
+        "CI/CD"
+      ],
+      "must_coverage": 1.9,
+      "overall_coverage": 1.3,
+      "notes": "Кандидат остановил интервью."
+    }
+  }
+}

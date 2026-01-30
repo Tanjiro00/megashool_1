@@ -1,36 +1,18 @@
 {
   "participant_name": "Scripted",
-  "created_at_utc": "2026-01-30T19:20:10.536228",
+  "created_at_utc": "2026-01-30T19:20:10.593598",
   "turns": [
     {
       "turn_id": 1,
       "agent_visible_message": "Расскажите про сложность бинарного поиска?",
-      "user_message": "Привет! Я готов.",
+      "user_message": "Начнём?",
       "internal_thoughts": "[Observer]: Heuristic: off-topic (нет перекрытия с темой) [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.03/0.02 reason=Тема python_basics ещё не покрыта (asked=1, status=in_progress); остаёмся. off_topic=True controversial=False injection=False"
     },
     {
       "turn_id": 2,
       "agent_visible_message": "Начнём с темы Python basics: какие ключевые понятия вы знаете?",
-      "user_message": "Я в основном писал на Python, делал веб-сервисы.",
+      "user_message": "Я слышал, что в Python 4.0 уберут цикл for, это правда?",
       "internal_thoughts": "[Observer]: Keep steady, probe depth [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.06/0.04 reason=Тема python_basics ещё не покрыта (asked=2, status=in_progress); остаёмся. off_topic=False controversial=False injection=False"
-    },
-    {
-      "turn_id": 3,
-      "agent_visible_message": "Начнём с темы Python basics: какие ключевые понятия вы знаете?",
-      "user_message": "Python 4.0 уберут for, поэтому я учу новые конструкции.",
-      "internal_thoughts": "[Observer]: Keep steady, probe depth | controversial [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.06/0.04 reason=Тема python_basics ещё не покрыта (asked=3, status=in_progress); остаёмся. off_topic=False controversial=True injection=False"
-    },
-    {
-      "turn_id": 4,
-      "agent_visible_message": "Уточните, пожалуйста, что имели в виду. Затем ответьте: Почему так считаешь? На что опираешься? Затем ответьте: Расскажите про сложность бинарного поиска?",
-      "user_message": "А ты что думаешь про Rust?",
-      "internal_thoughts": "[Observer]: Keep steady, probe depth [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.06/0.04 reason=Тема python_basics ещё не покрыта (asked=4, status=in_progress); остаёмся. off_topic=False controversial=False injection=False"
-    },
-    {
-      "turn_id": 5,
-      "agent_visible_message": "Начнём с темы Python basics: какие ключевые понятия вы знаете?",
-      "user_message": "Не знаю точного ответа.",
-      "internal_thoughts": "[Observer]: Heuristic: off-topic (нет перекрытия с темой) | controversial [Planner]: selected_topic=python_basics diff=2 coverage(must/overall)=0.06/0.04 reason=Тема python_basics ещё не покрыта (asked=5, status=in_progress); остаёмся. off_topic=True controversial=True injection=False"
     }
   ],
   "final_feedback": {

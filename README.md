@@ -40,6 +40,34 @@ flowchart TD
     WS --> SO[StackOverflow API]
 ```
 
+### Диаграмма взаимодействия агентов (порядок и сообщения)
+```mermaid
+sequenceDiagram
+    participant C as Candidate
+    participant CLI as main.py
+    participant OBS as Observer
+    participant PL as Planner
+    participant INT as Interviewer
+    participant PT as ProgressTracker
+    participant LOG as Logger
+
+    C->>CLI: Ответ на вопрос
+    CLI->>OBS: last_question + user_message + context
+    OBS-->>CLI: ObserverAnalysis (JSON)
+
+    CLI->>PT: record_progress(topic_id, score, difficulty)
+    PT-->>CLI: coverage + stats
+
+    CLI->>PL: ObserverAnalysis + coverage + difficulty
+    PL-->>CLI: InterviewerPlan (JSON)
+
+    CLI->>INT: InterviewerPlan + last_user_message
+    INT-->>CLI: Финальная реплика (комментарий + вопрос)
+
+    CLI->>LOG: save turn + internal_thoughts
+    CLI-->>C: Отправка реплики кандидату
+```
+
 ### Роли агентов
 
 #### Interviewer (Интервьюер)
@@ -142,6 +170,29 @@ flowchart TD
 - В логах `internal_thoughts` сохраняются метрики и выбранная тема.  
 
 Память **детерминирована и прозрачна**: всё, что влияет на поведение, сохраняется в логах.
+
+### Диаграмма Memory Flow
+```mermaid
+flowchart TD
+    U[Кандидат] --> A[Ответ]
+    A --> EX[extract_facts()]
+    A --> SUM[update_summary()]
+    EX --> FACTS[state.extracted_facts]
+    SUM --> RSUM[state.running_summary]
+    HIST[ConversationTurn] --> H[state.history]
+
+    FACTS --> KN[_known_facts_text()]
+    RSUM --> RQ[_recent_qa_text()]
+    H --> RQ
+
+    KN --> OBS[Observer Task]
+    RQ --> OBS
+    KN --> PL[Planner Task]
+    RQ --> PL
+
+    H --> QAC[question_already_covered()]
+    QAC --> INT[Interviewer]
+```
 
 ---
 

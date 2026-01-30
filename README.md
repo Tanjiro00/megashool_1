@@ -114,6 +114,16 @@ sequenceDiagram
 - Принимает `ObserverAnalysis`, текущую тему, метрики покрытия, уровень сложности и краткую память (recent Q/A, facts).
 - Возвращает `InterviewerPlan` (next_action, next_question, topic_id, difficulty).
 - Гарантирует, что вопрос остаётся в выбранной теме.
+**Подробно про Planner:**
+- **Это не отдельный LLM-агент**, а отдельная задача в цепочке, которая использует системные правила Interviewer и фиксированные инструкции (next_action rules).
+- **Входы:** `ObserverAnalysis`, `TopicSelection`, `coverage`, `difficulty`, `recent_qa`, `known_facts`.
+- **Выход:** `InterviewerPlan` со строгой структурой (topic, topic_id, next_action, next_question, difficulty).
+- **Логика решения:**  
+  - `ROLE_REVERSAL` -> `ANSWER_ROLE_REVERSAL_THEN_ASK`  
+  - `OFF_TOPIC` -> `REDIRECT_AND_ASK`  
+  - неясный ответ -> `CLARIFY_THEN_ASK`  
+  - иначе -> `ASK_QUESTION`  
+- **Зачем нужен:** отделяет “анализ ответа” от “формулирования следующего шага”, делает диалог детерминированным и предсказуемым, снижает риск ухода с темы.
 
 #### Progress Tracker (трекер прогресса)
 **Где реализован:** `topics.py` (`ProgressTracker`, `record_progress`, `recalc_coverage`)  
@@ -171,43 +181,21 @@ sequenceDiagram
 
 Память **детерминирована и прозрачна**: всё, что влияет на поведение, сохраняется в логах.
 
-### Диаграмма Memory Flow
-```mermaid
-flowchart TD
-    U[Кандидат] --> A[Ответ]
-    A --> EX[extract_facts()]
-    A --> SUM[update_summary()]
-    EX --> FACTS[state.extracted_facts]
-    SUM --> RSUM[state.running_summary]
-    HIST[ConversationTurn] --> H[state.history]
-
-    FACTS --> KN[_known_facts_text()]
-    RSUM --> RQ[_recent_qa_text()]
-    H --> RQ
-
-    KN --> OBS[Observer Task]
-    RQ --> OBS
-    KN --> PL[Planner Task]
-    RQ --> PL
-
-    H --> QAC[question_already_covered()]
-    QAC --> INT[Interviewer]
-```
-
 ---
 
-## Workflow мультиагентной системы (пошагово)
-1. **Сбор профиля** (имя, позиция, грейд, опыт).  
-2. **Построение TopicPlan** с учётом грейда/опыта/стека.  
-3. **Выбор стартовой темы** и уровня сложности.  
-4. **Interviewer** задаёт первый вопрос.  
+## Workflow мультиагентной системы (подробно)
+1. **Сбор профиля**: имя, позиция, грейд, опыт.  
+2. **TopicPlan**: формируется список тем, правила покрытия и baseline сложности.  
+3. **Выбор стартовой темы**: с приоритетом must (для Senior - system design/конкурентность).  
+4. **Interviewer** генерирует стартовый вопрос по выбранной теме.  
 5. **Кандидат отвечает.**  
-6. **Observer** анализирует ответ и выдаёт `ObserverAnalysis`.  
-7. **Progress Tracker** обновляет метрики покрытия и сложности.  
-8. **Planner** формирует `InterviewerPlan` (действие + следующий вопрос).  
-9. **Interviewer** формирует финальную реплику (реакция + вопрос).  
-10. Цикл повторяется, пока не достигнуты лимит вопросов или target coverage.  
-11. **Hiring Manager** формирует финальный отчёт с результатами и рекомендациями.  
+6. **Observer** анализирует ответ и возвращает `ObserverAnalysis` (intent, correctness, gaps, follow-up).  
+7. **Progress Tracker** обновляет coverage и историю результатов.  
+8. **Planner** строит `InterviewerPlan`: действие (redirect/clarify/ask) + следующий вопрос.  
+9. **Interviewer** формирует финальную реплику (краткая реакция + вопрос).  
+10. **Logger** сохраняет ход и внутренние метрики.  
+11. Цикл повторяется до достижения лимита или целевого coverage.  
+12. **Hiring Manager** формирует финальный отчёт.  
 
 ---
 
